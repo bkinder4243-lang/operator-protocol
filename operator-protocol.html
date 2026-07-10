@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d10">
+<title>OPERATOR PROTOCOL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   OPERATOR PROTOCOL — styles
+   Palette: near-black console, amber = signal/active,
+   steel-blue = secondary/locked. Sharp corners, mono HUD.
+   ============================================================ */
+:root{
+  --bg:        #0b0d10;
+  --panel:     #11151b;
+  --panel-2:   #161b23;
+  --line:      #232b36;
+  --amber:     #ffb454;
+  --amber-hi:  #ffd08a;
+  --amber-dim: #7a5a28;
+  --steel:     #7d97ad;
+  --steel-dim: #46586b;
+  --text:      #d8dee6;
+  --muted:     #8b96a3;
+  --danger:    #e2574a;
+  --ok:        #7fc97f;
+  --font-disp: 'Chakra Petch', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html{ background:var(--bg); }
+body{
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-disp);
+  min-height:100vh;
+  padding: max(12px, env(safe-area-inset-top)) 12px calc(48px + env(safe-area-inset-bottom));
+  max-width:680px; margin:0 auto;
+  user-select:none; -webkit-user-select:none;
+}
+.mono{ font-family:var(--font-mono); }
+
+/* ---------- header / HUD ---------- */
+header{ padding:10px 2px 14px; border-bottom:1px solid var(--line); }
+.brand{
+  display:flex; align-items:baseline; gap:10px; letter-spacing:.14em;
+}
+.brand h1{ font-size:19px; font-weight:700; color:var(--amber); text-transform:uppercase; }
+.brand .sub{ font-family:var(--font-mono); font-size:10px; color:var(--steel-dim); letter-spacing:.2em; }
+#hud{ margin-top:12px; }
+.hud-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.hud-item{ font-family:var(--font-mono); font-size:12px; color:var(--muted); }
+.hud-item b{ color:var(--text); font-weight:600; }
+.hud-item .amber{ color:var(--amber); }
+.xpbar{
+  margin-top:8px; height:10px; background:var(--panel-2);
+  border:1px solid var(--line); position:relative; overflow:hidden;
+}
+.xpbar > i{
+  display:block; height:100%; background:linear-gradient(90deg, var(--amber-dim), var(--amber));
+  transition:width .45s cubic-bezier(.2,.9,.3,1);
+}
+.xpbar-label{
+  margin-top:5px; display:flex; justify-content:space-between;
+  font-family:var(--font-mono); font-size:10px; color:var(--steel-dim); letter-spacing:.08em;
+}
+.streak-flame{ color:var(--amber); }
+.streak-cold{ color:var(--steel-dim); }
+
+/* ---------- generic panel / section ---------- */
+section{ margin-top:20px; }
+.sec-head{
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:12px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--steel); padding-bottom:6px; border-bottom:1px solid var(--line);
+}
+.sec-head .hint{ font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; color:var(--steel-dim); text-transform:none; text-align:right; }
+
+/* ---------- stats ---------- */
+#stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+.stat{
+  background:var(--panel); border:1px solid var(--line); padding:9px 10px;
+}
+.stat .k{ font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.stat .v{ font-family:var(--font-mono); font-size:22px; font-weight:600; color:var(--text); line-height:1.15; }
+.stat .bar{ margin-top:6px; height:3px; background:var(--panel-2); }
+.stat .bar i{ display:block; height:100%; background:var(--steel-dim); transition:width .4s; }
+.stat.hot .bar i{ background:var(--amber); }
+.stat.hot .v{ color:var(--amber-hi); }
+
+/* ---------- quests ---------- */
+#quests{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+.quest{
+  display:flex; align-items:center; gap:12px;
+  background:var(--panel); border:1px solid var(--line);
+  padding:12px; cursor:pointer; position:relative;
+  transition:border-color .2s, background .2s;
+}
+.quest:active{ background:var(--panel-2); }
+.quest.done{ border-color:var(--amber-dim); background:linear-gradient(180deg, rgba(255,180,84,.05), transparent); cursor:default; }
+.qbox{
+  flex:0 0 auto; width:22px; height:22px; border:1px solid var(--steel-dim);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:14px; color:var(--amber);
+}
+.quest.done .qbox{ border-color:var(--amber); background:rgba(255,180,84,.12); }
+.qmain{ flex:1 1 auto; min-width:0; }
+.qname{ font-size:14px; font-weight:600; line-height:1.25; }
+.quest.done .qname{ color:var(--muted); text-decoration:line-through; text-decoration-color:var(--amber-dim); }
+.qtags{ margin-top:4px; display:flex; gap:6px; flex-wrap:wrap; }
+.tag{
+  font-family:var(--font-mono); font-size:9px; letter-spacing:.08em;
+  padding:1px 6px; border:1px solid var(--steel-dim); color:var(--steel);
+  text-transform:uppercase;
+}
+.tag.active-branch{ border-color:var(--amber-dim); color:var(--amber); }
+.qxp{
+  flex:0 0 auto; font-family:var(--font-mono); font-size:12px; font-weight:600;
+  color:var(--steel); white-space:nowrap;
+}
+.qxp.boosted{ color:var(--amber); }
+.quest.done .qxp{ color:var(--amber-dim); }
+.qdel{
+  position:absolute; top:-1px; right:-1px; padding:2px 7px;
+  font-family:var(--font-mono); font-size:11px; color:var(--steel-dim);
+  background:var(--panel-2); border:1px solid var(--line); cursor:pointer;
+}
+.qdel:active{ color:var(--danger); }
+
+/* ---------- field log (daily journal) ---------- */
+#log{ margin-top:10px; display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+.day{ background:var(--panel); border:1px solid var(--line); padding:6px 2px; text-align:center; position:relative; }
+.day .dd{ font-family:var(--font-mono); font-size:9px; color:var(--steel-dim); letter-spacing:.05em; }
+.day .dc{ font-family:var(--font-mono); font-size:12px; color:var(--steel-dim); margin-top:2px; }
+.day.partial{ border-color:var(--steel-dim); }
+.day.partial .dc{ color:var(--steel); }
+.day.perfect{ border-color:var(--amber-dim); background:linear-gradient(180deg, rgba(255,180,84,.07), transparent); }
+.day.perfect .dc{ color:var(--amber); }
+.day .dp{ position:absolute; top:1px; right:3px; font-size:8px; color:var(--amber); }
+.day.today{ outline:1px solid var(--steel-dim); outline-offset:1px; }
+
+/* ---------- skill tree ---------- */
+#tree{ margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.branch{ background:var(--panel); border:1px solid var(--line); padding:10px; }
+.branch.is-active{ border-color:var(--amber-dim); }
+.bhead{ display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:8px; }
+.bname{ font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; }
+.branch.is-active .bname{ color:var(--amber); }
+.bchip{
+  font-family:var(--font-mono); font-size:8px; letter-spacing:.12em; padding:2px 5px;
+  border:1px solid; cursor:pointer; white-space:nowrap;
+}
+.bchip.on{ color:var(--amber); border-color:var(--amber-dim); background:rgba(255,180,84,.08); cursor:default; }
+.bchip.off{ color:var(--steel-dim); border-color:var(--steel-dim); }
+.node{ display:flex; gap:8px; padding:7px 0; border-top:1px dashed var(--line); }
+.node .pip{
+  flex:0 0 auto; width:10px; height:10px; margin-top:3px; border:1px solid var(--steel-dim);
+  transform:rotate(45deg);
+}
+.node.open .pip{ background:var(--amber); border-color:var(--amber); box-shadow:0 0 8px rgba(255,180,84,.5); }
+.node .nname{ font-size:11.5px; font-weight:600; letter-spacing:.04em; }
+.node .ngate{ font-family:var(--font-mono); font-size:9px; color:var(--steel-dim); }
+.node .ndesc{ font-size:10.5px; color:var(--muted); line-height:1.35; margin-top:2px; }
+.node.locked .nname{ color:var(--steel-dim); }
+.node.locked .ndesc{ color:var(--steel-dim); opacity:.7; }
+.node.open .ngate{ color:var(--amber-dim); }
+
+/* ---------- badges ---------- */
+#badges{ margin-top:10px; display:grid; grid-template-columns:repeat(auto-fill,minmax(76px,1fr)); gap:8px; }
+.badge{
+  background:var(--panel); border:1px solid var(--line); padding:8px 6px; text-align:center;
+}
+.badge .glyph{ font-family:var(--font-mono); font-size:17px; color:var(--steel-dim); }
+.badge .bn{ font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--steel-dim); margin-top:4px; line-height:1.3; }
+.badge .bd{ font-family:var(--font-mono); font-size:8px; color:var(--steel-dim); opacity:.75; margin-top:2px; line-height:1.3; }
+.badge.earned{ border-color:var(--amber-dim); }
+.badge.earned .glyph{ color:var(--amber); text-shadow:0 0 10px rgba(255,180,84,.5); }
+.badge.earned .bn{ color:var(--text); }
+.badge.earned .bd{ color:var(--muted); }
+
+/* ---------- footer controls ---------- */
+#controls{ margin-top:24px; display:flex; gap:8px; flex-wrap:wrap; }
+.btn{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.1em;
+  padding:10px 14px; background:var(--panel); color:var(--steel);
+  border:1px solid var(--steel-dim); cursor:pointer; text-transform:uppercase;
+}
+.btn:active{ background:var(--panel-2); }
+.btn.primary{ color:var(--amber); border-color:var(--amber-dim); }
+.btn.danger{ color:var(--danger); border-color:#5a2b27; }
+footer{
+  margin-top:18px; font-family:var(--font-mono); font-size:9px;
+  color:var(--steel-dim); letter-spacing:.1em; text-align:center;
+}
+
+/* ---------- modal ---------- */
+#overlay{
+  position:fixed; inset:0; background:rgba(4,6,8,.82); z-index:50;
+  display:none; align-items:center; justify-content:center; padding:20px;
+}
+#overlay.show{ display:flex; }
+#modal{
+  width:100%; max-width:420px; background:var(--panel);
+  border:1px solid var(--amber-dim); padding:20px;
+  box-shadow:0 0 40px rgba(255,180,84,.12);
+}
+#modal h2{
+  font-size:16px; letter-spacing:.2em; text-transform:uppercase; color:var(--amber);
+}
+#modal .msub{ font-family:var(--font-mono); font-size:10px; color:var(--steel); margin-top:4px; letter-spacing:.1em; }
+#modal .mbody{ margin-top:14px; font-size:13px; line-height:1.5; color:var(--text); }
+#modal .unlock-line{
+  font-family:var(--font-mono); font-size:11px; padding:6px 0;
+  border-top:1px dashed var(--line); color:var(--amber-hi);
+}
+#modal .unlock-line small{ color:var(--muted); display:block; font-size:9px; }
+#modal .mactions{ margin-top:18px; display:flex; gap:8px; justify-content:flex-end; }
+#modal label{ display:block; font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; color:var(--steel); margin:12px 0 4px; text-transform:uppercase; }
+#modal input[type=text], #modal select{
+  width:100%; background:var(--panel-2); border:1px solid var(--line);
+  color:var(--text); font-family:var(--font-mono); font-size:13px; padding:9px;
+  border-radius:0; appearance:none; -webkit-appearance:none;
+}
+#modal input[type=text]:focus, #modal select:focus{ outline:1px solid var(--amber-dim); }
+
+/* ---------- toasts ---------- */
+#toasts{
+  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translateX(-50%); z-index:60; display:flex; flex-direction:column;
+  gap:6px; align-items:center; pointer-events:none; width:max-content; max-width:92vw;
+}
+.toast{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+  background:var(--panel-2); border:1px solid var(--amber-dim); color:var(--amber-hi);
+  padding:8px 14px; animation:toastIn .25s ease-out;
+}
+.toast.info{ border-color:var(--steel-dim); color:var(--steel); }
+@keyframes toastIn{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+
+/* ---------- fx ---------- */
+.float-xp{
+  position:fixed; z-index:70; pointer-events:none;
+  font-family:var(--font-mono); font-weight:600; font-size:15px; color:var(--amber);
+  text-shadow:0 0 8px rgba(255,180,84,.6);
+  animation:floatUp 1s ease-out forwards;
+}
+@keyframes floatUp{
+  0%{ opacity:0; transform:translateY(0) scale(.8); }
+  15%{ opacity:1; transform:translateY(-8px) scale(1.05); }
+  100%{ opacity:0; transform:translateY(-52px) scale(1); }
+}
+#fx{ position:fixed; inset:0; pointer-events:none; z-index:65; overflow:hidden; }
+.cf{ position:absolute; width:6px; height:9px; top:-12px; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation:none !important; transition:none !important; }
+}
+@media (max-width:380px){
+  #tree{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Operator Protocol</h1>
+    <span class="sub">v1.1 // FIELD UNIT</span>
+  </div>
+  <div id="hud"></div>
+</header>
+
+<section>
+  <div class="sec-head"><span>Attributes</span></div>
+  <div id="stats"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span>Daily Quests</span><span class="hint" id="quest-hint"></span></div>
+  <div id="quests"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span>Field Log</span><span class="hint">last 14 days // full journal in save file</span></div>
+  <div id="log"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span>Skill Tree</span><span class="hint">2 rooms powered // tap chip to reroute</span></div>
+  <div id="tree"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span>Commendations</span></div>
+  <div id="badges"></div>
+</section>
+
+<div id="controls">
+  <button class="btn primary" data-action="open-add">+ New Quest</button>
+  <button class="btn" data-action="backup">Save to Files</button>
+  <button class="btn" data-action="export">Copy Save</button>
+  <button class="btn" data-action="import">Import</button>
+  <button class="btn danger" data-action="reset">Wipe</button>
+</div>
+
+<footer>LOCAL SAVE // NO SERVER // YOUR DATA STAYS ON THIS DEVICE</footer>
+
+<div id="overlay"><div id="modal"></div></div>
+<div id="toasts"></div>
+<div id="fx"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   OPERATOR PROTOCOL — architecture notes for the next engineer
+   ------------------------------------------------------------
+   1. CONSTANTS   — static game data (quests, tree, badges).
+   2. STATE       — one serializable object `S`. Nothing else
+                    holds game data. localStorage r/w in try/catch.
+   3. ROLLOVER    — pure calendar-date logic, runs once on load.
+   4. GAME LOGIC  — mutators: completeQuest, applyXP, rotateRoom.
+                    They mutate S, then call save() + render().
+   5. RENDER      — render() repaints every section from S.
+                    No incremental DOM surgery; state is truth.
+   6. FX          — cosmetic only (floating XP, confetti, toasts).
+                    Never touches S. Skipped under reduced-motion.
+   7. EVENTS      — one delegated click handler on document,
+                    routed by data-action attributes.
+   ============================================================ */
+
+/* ================= 1. CONSTANTS ================= */
+const SAVE_KEY = 'operator_protocol_v1';
+const BASE_XP = 20, BOOSTED_XP = 30, PERFECT_BONUS = 50;
+const RENOVATOR_LVL = 8;          // Execution top node; gates room rotation
+const STATS = ['focus','vitality','charisma','discipline'];
+const STAT_LABEL = { focus:'Focus', vitality:'Vitality', charisma:'Charisma', discipline:'Discipline' };
+
+const BASE_QUESTS = [
+  { id:'q_sleep',  name:'Slept 7+ hours',                              stat:'vitality', branch:'foundation' },
+  { id:'q_train',  name:'Trained or moved hard',                       stat:'vitality', branch:'foundation' },
+  { id:'q_deep',   name:'One 90-min deep work block',                  stat:'focus',    branch:'cognitive'  },
+  { id:'q_read',   name:'Read + summarized something difficult',       stat:'focus',    branch:'cognitive'  },
+  { id:'q_listen', name:'One conversation, listened more than talked', stat:'charisma', branch:'social'     },
+];
+
+const BRANCHES = {
+  foundation: { name:'Foundation', nodes:[
+    { id:'f1', name:'Groundwork',   lvl:1, desc:'The body is the platform. Everything runs on it.' },
+    { id:'f2', name:'Iron Routine', lvl:3, desc:'Sleep and training stop being decisions.' },
+    { id:'f3', name:'Bedrock',      lvl:6, desc:'Bad weeks bend you. Nothing breaks you.' },
+  ]},
+  cognitive: { name:'Cognitive', nodes:[
+    { id:'c1', name:'Signal Lock',  lvl:2, desc:'One target at a time. Noise rejected.' },
+    { id:'c2', name:'Deep Current', lvl:5, desc:'90 minutes under. No surfacing.' },
+    { id:'c3', name:'Overclock',    lvl:9, desc:'Hard material metabolized on contact.' },
+  ]},
+  social: { name:'Social', nodes:[
+    { id:'s1', name:'Open Channel', lvl:2, desc:'Listening as an active op, not a pause.' },
+    { id:'s2', name:'Resonance',    lvl:5, desc:'People leave conversations with you lighter.' },
+    { id:'s3', name:'Broadcast',    lvl:9, desc:'Your word moves rooms you are not in.' },
+  ]},
+  execution: { name:'Execution', nodes:[
+    { id:'e1', name:'Initiative',   lvl:3, desc:'Start before ready. Momentum over mood.' },
+    { id:'e2', name:'Momentum',     lvl:6, desc:'Chains of finished days. Compounding.' },
+    { id:'e3', name:'Renovator',    lvl:RENOVATOR_LVL, desc:'UNLOCKS ROOM ROTATION. Re-route power between branches at will.' },
+  ]},
+};
+
+const BADGES = [
+  { id:'b_first', glyph:'▸', name:'First Blood',  desc:'Complete your first quest',  earned:s=>s.totalCompleted>=1 },
+  { id:'b_pd',    glyph:'◆', name:'Clean Sweep',  desc:'Log one Perfect Day',        earned:s=>s.perfectDays>=1 },
+  { id:'b_s3',    glyph:'≡', name:'Ignition',     desc:'3-day streak',               earned:s=>s.bestStreak>=3 },
+  { id:'b_s7',    glyph:'☰', name:'Locked In',    desc:'7-day streak',               earned:s=>s.bestStreak>=7 },
+  { id:'b_s30',   glyph:'█', name:'Unbreakable',  desc:'30-day streak',              earned:s=>s.bestStreak>=30 },
+  { id:'b_l5',    glyph:'✦', name:'Operator II',  desc:'Reach level 5',              earned:s=>s.level>=5 },
+  { id:'b_l10',   glyph:'✷', name:'Operator III', desc:'Reach level 10',             earned:s=>s.level>=10 },
+];
+
+/* ================= 2. STATE ================= */
+function defaultState(){
+  return {
+    v:1,
+    level:1, xp:0,
+    stats:{ focus:0, vitality:0, charisma:0, discipline:0 },
+    activeBranches:['foundation','cognitive'],   // the "Two Rooms"
+    completedToday:[],       // quest ids checked today
+    customQuests:[],         // {id,name,stat,branch} added by the player
+    streak:0, bestStreak:0,
+    perfectDays:0, totalCompleted:0,
+    lastSeenDate:null,       // 'YYYY-MM-DD' local — last day the app ran
+    lastPerfectDate:null,    // 'YYYY-MM-DD' local — last Perfect Day
+    badges:[],               // earned badge ids
+    history:{},              // permanent journal: 'YYYY-MM-DD' → {done:[ids], xp, total, perfect}
+  };
+}
+
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ /* storage unavailable — play session-only */ }
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) return Object.assign(defaultState(), JSON.parse(raw));
+  }catch(e){}
+  return defaultState();
+}
+
+let S = load();
+
+/* ================= 3. DATE / ROLLOVER ================= */
+function dstr(d){ // local YYYY-MM-DD (never UTC — streaks follow the player's clock)
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function todayStr(){ return dstr(new Date()); }
+function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return dstr(d); }
+
+function rollover(){
+  const today = todayStr();
+  if(S.lastSeenDate === today) return;
+  S.completedToday = [];                       // fresh checkboxes for the new day
+  if(S.lastPerfectDate !== yesterdayStr()){    // yesterday wasn't perfect → chain broken
+    S.streak = 0;
+  }
+  S.lastSeenDate = today;
+  // bound journal size: keep roughly the last 400 days
+  const keys = Object.keys(S.history).sort();
+  while(keys.length > 400) delete S.history[keys.shift()];
+  save();
+}
+
+/* ================= 4. GAME LOGIC ================= */
+function allQuests(){ return BASE_QUESTS.concat(S.customQuests); }
+function questXP(q){ return S.activeBranches.includes(q.branch) ? BOOSTED_XP : BASE_XP; }
+function xpToNext(level){ return 100 + (level-1)*40; }
+function rotationUnlocked(){ return S.level >= RENOVATOR_LVL; }
+function nodeOpen(node){ return S.level >= node.lvl; }
+
+function applyXP(amount){ // returns array of levels gained
+  S.xp += amount;
+  const gained = [];
+  while(S.xp >= xpToNext(S.level)){
+    S.xp -= xpToNext(S.level);
+    S.level += 1;
+    gained.push(S.level);
+  }
+  return gained;
+}
+
+function nodesUnlockedBetween(fromLvl, toLvl){
+  const out = [];
+  for(const key in BRANCHES){
+    for(const n of BRANCHES[key].nodes){
+      if(n.lvl > fromLvl && n.lvl <= toLvl) out.push({ branch:BRANCHES[key].name, ...n });
+    }
+  }
+  return out;
+}
+
+function checkBadges(){ // returns newly earned badge defs
+  const fresh = [];
+  for(const b of BADGES){
+    if(!S.badges.includes(b.id) && b.earned(S)){ S.badges.push(b.id); fresh.push(b); }
+  }
+  return fresh;
+}
+
+function completeQuest(id, sourceEl){
+  if(S.completedToday.includes(id)) return;   // committed for the day — no toggle-farming
+  const q = allQuests().find(q=>q.id===id);
+  if(!q) return;
+
+  S.completedToday.push(id);
+  S.totalCompleted += 1;
+  S.stats[q.stat] += 1;
+
+  let earnedXP = questXP(q);
+  let perfect = false;
+
+  if(S.completedToday.length >= allQuests().length && S.lastPerfectDate !== todayStr()){
+    perfect = true;
+    S.lastPerfectDate = todayStr();
+    S.streak += 1;
+    S.bestStreak = Math.max(S.bestStreak, S.streak);
+    S.perfectDays += 1;
+    earnedXP += PERFECT_BONUS;
+  }
+
+  // journal: permanent per-day record (survives rollover; this is your daily-entry storage)
+  const day = todayStr();
+  if(!S.history[day]) S.history[day] = { done:[], xp:0, total:0, perfect:false };
+  const h = S.history[day];
+  h.done.push(q.id);
+  h.xp += earnedXP;
+  h.total = allQuests().length;
+  if(perfect) h.perfect = true;
+
+  const beforeLvl = S.level;
+  const levelsGained = applyXP(earnedXP);
+  const newNodes = levelsGained.length ? nodesUnlockedBetween(beforeLvl, S.level) : [];
+  const newBadges = checkBadges();
+
+  save(); render();
+
+  // ---- juice ----
+  fxFloatXP('+'+earnedXP+' XP', sourceEl);
+  if(perfect){ toast('PERFECT DAY — STREAK '+S.streak+' — +'+PERFECT_BONUS+' XP BONUS'); fxConfetti(); }
+  for(const b of newBadges) toast('COMMENDATION — '+b.name.toUpperCase());
+  if(levelsGained.length) showLevelUpModal(levelsGained, newNodes);
+}
+
+function rotateRoom(branchKey){
+  if(S.activeBranches.includes(branchKey)) return;
+  if(!rotationUnlocked()){
+    showModal(
+      'Rotation Locked',
+      'TWO ROOMS PROTOCOL',
+      '<p>Only two rooms hold power at a time — and the wiring is welded shut.</p>'+
+      '<p style="margin-top:8px">Unlock <b style="color:var(--amber)">RENOVATOR</b> '+
+      '(Execution branch, LVL '+RENOVATOR_LVL+') to re-route power between branches. '+
+      'Until then: the focus you picked is the focus you keep.</p>',
+      '<button class="btn" data-action="close-modal">Acknowledged</button>'
+    );
+    return;
+  }
+  // replace the older of the two active rooms
+  const dropped = S.activeBranches.shift();
+  S.activeBranches.push(branchKey);
+  save(); render();
+  toast('POWER REROUTED: '+BRANCHES[dropped].name.toUpperCase()+' → '+BRANCHES[branchKey].name.toUpperCase(), true);
+}
+
+function addCustomQuest(name, stat, branch){
+  S.customQuests.push({ id:'c_'+Date.now().toString(36), name, stat, branch });
+  save(); render();
+}
+function deleteCustomQuest(id){
+  S.customQuests = S.customQuests.filter(q=>q.id!==id);
+  S.completedToday = S.completedToday.filter(qid=>qid!==id);
+  save(); render();
+}
+
+/* ================= 5. RENDER ================= */
+const $ = sel => document.querySelector(sel);
+function esc(str){ const d=document.createElement('div'); d.textContent=str; return d.innerHTML; }
+
+function render(){
+  renderHUD(); renderStats(); renderQuests(); renderLog(); renderTree(); renderBadges();
+}
+
+function renderLog(){
+  const today = todayStr();
+  const cells = [];
+  for(let i=13;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const key = dstr(d);
+    const h = S.history[key];
+    let cls = '', body = '·';
+    if(h && h.done.length){ cls = h.perfect ? ' perfect' : ' partial'; body = h.done.length + (h.total ? '/'+h.total : ''); }
+    cells.push('<div class="day'+cls+(key===today?' today':'')+'">'+
+      '<div class="dd">'+String(d.getDate()).padStart(2,'0')+'</div>'+
+      '<div class="dc">'+body+'</div>'+
+      (h && h.perfect ? '<div class="dp">◆</div>' : '')+
+    '</div>');
+  }
+  $('#log').innerHTML = cells.join('');
+}
+
+function renderHUD(){
+  const need = xpToNext(S.level);
+  const pct = Math.min(100, Math.round(S.xp/need*100));
+  const streakCls = S.streak>0 ? 'streak-flame' : 'streak-cold';
+  $('#hud').innerHTML =
+    '<div class="hud-row">'+
+      '<span class="hud-item">OPERATOR <b class="amber">LVL '+S.level+'</b></span>'+
+      '<span class="hud-item '+streakCls+'">▲ STREAK <b>'+S.streak+'</b></span>'+
+      '<span class="hud-item">BEST <b>'+S.bestStreak+'</b></span>'+
+    '</div>'+
+    '<div class="xpbar"><i style="width:'+pct+'%"></i></div>'+
+    '<div class="xpbar-label"><span>XP '+S.xp+' / '+need+'</span><span>NEXT: LVL '+(S.level+1)+'</span></div>';
+}
+
+function renderStats(){
+  const maxRef = 50; // visual reference cap for the tick bar
+  $('#stats').innerHTML = STATS.map(k=>{
+    const v = S.stats[k];
+    const linkedActive = allQuests().some(q=>q.stat===k && S.activeBranches.includes(q.branch));
+    return '<div class="stat'+(linkedActive?' hot':'')+'">'+
+      '<div class="k">'+STAT_LABEL[k]+'</div>'+
+      '<div class="v">'+String(v).padStart(2,'0')+'</div>'+
+      '<div class="bar"><i style="width:'+Math.min(100, v/maxRef*100)+'%"></i></div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderQuests(){
+  const qs = allQuests();
+  const doneCount = S.completedToday.length;
+  $('#quest-hint').textContent = doneCount+' / '+qs.length+' — all = perfect day +'+PERFECT_BONUS+' xp';
+  $('#quests').innerHTML = qs.map(q=>{
+    const done = S.completedToday.includes(q.id);
+    const boosted = S.activeBranches.includes(q.branch);
+    const custom = q.id.startsWith('c_');
+    return '<div class="quest'+(done?' done':'')+'" data-action="complete-quest" data-id="'+q.id+'">'+
+      '<div class="qbox">'+(done?'✕':'')+'</div>'+
+      '<div class="qmain">'+
+        '<div class="qname">'+esc(q.name)+'</div>'+
+        '<div class="qtags">'+
+          '<span class="tag">'+STAT_LABEL[q.stat]+'</span>'+
+          '<span class="tag'+(boosted?' active-branch':'')+'">'+BRANCHES[q.branch].name+(boosted?' ▪ LIVE':'')+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="qxp'+(boosted?' boosted':'')+'">+'+questXP(q)+' XP</div>'+
+      (custom && !done ? '<span class="qdel" data-action="delete-quest" data-id="'+q.id+'">✕</span>' : '')+
+    '</div>';
+  }).join('');
+}
+
+function renderTree(){
+  $('#tree').innerHTML = Object.keys(BRANCHES).map(key=>{
+    const b = BRANCHES[key];
+    const active = S.activeBranches.includes(key);
+    const chip = active
+      ? '<span class="bchip on">■ POWERED</span>'
+      : '<span class="bchip off" data-action="set-active" data-branch="'+key+'">'+(rotationUnlocked()?'○ REROUTE':'○ DARK')+'</span>';
+    const nodes = b.nodes.map(n=>{
+      const open = nodeOpen(n);
+      return '<div class="node '+(open?'open':'locked')+'">'+
+        '<span class="pip"></span>'+
+        '<div>'+
+          '<div class="nname">'+n.name+' <span class="ngate">['+(open?'ONLINE':'LVL '+n.lvl)+']</span></div>'+
+          '<div class="ndesc">'+n.desc+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    return '<div class="branch'+(active?' is-active':'')+'">'+
+      '<div class="bhead"><span class="bname">'+b.name+'</span>'+chip+'</div>'+nodes+
+    '</div>';
+  }).join('');
+}
+
+function renderBadges(){
+  $('#badges').innerHTML = BADGES.map(b=>{
+    const got = S.badges.includes(b.id);
+    return '<div class="badge'+(got?' earned':'')+'">'+
+      '<div class="glyph">'+b.glyph+'</div>'+
+      '<div class="bn">'+b.name+'</div>'+
+      '<div class="bd">'+b.desc+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ================= 6. FX (cosmetic only) ================= */
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function toast(msg, info){
+  const t = document.createElement('div');
+  t.className = 'toast'+(info?' info':'');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(()=>t.remove(), 2800);
+}
+
+function fxFloatXP(text, sourceEl){
+  if(REDUCED) return;
+  const el = document.createElement('div');
+  el.className = 'float-xp';
+  el.textContent = text;
+  let x = window.innerWidth/2, y = window.innerHeight/2;
+  if(sourceEl && sourceEl.getBoundingClientRect){
+    const r = sourceEl.getBoundingClientRect();
+    x = r.left + r.width*0.72; y = r.top;
+  }
+  el.style.left = x+'px'; el.style.top = y+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1050);
+}
+
+function fxConfetti(){
+  if(REDUCED) return;
+  const fx = $('#fx');
+  const colors = ['#ffb454','#ffd08a','#7d97ad','#d8dee6','#7a5a28'];
+  for(let i=0;i<70;i++){
+    const p = document.createElement('div');
+    p.className = 'cf';
+    p.style.left = Math.random()*100+'vw';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    fx.appendChild(p);
+    const fall = 900 + Math.random()*1200;
+    const drift = (Math.random()-.5)*160;
+    p.animate([
+      { transform:'translate(0,0) rotate(0deg)', opacity:1 },
+      { transform:'translate('+drift+'px,'+(window.innerHeight+30)+'px) rotate('+(Math.random()*720-360)+'deg)', opacity:.9 }
+    ], { duration:fall, easing:'cubic-bezier(.3,.4,.6,1)' });
+    setTimeout(()=>p.remove(), fall);
+  }
+}
+
+/* ================= 7. MODALS ================= */
+function showModal(title, sub, bodyHTML, actionsHTML){
+  $('#modal').innerHTML =
+    '<h2>'+title+'</h2>'+
+    '<div class="msub">'+sub+'</div>'+
+    '<div class="mbody">'+bodyHTML+'</div>'+
+    '<div class="mactions">'+(actionsHTML||'<button class="btn primary" data-action="close-modal">Continue</button>')+'</div>';
+  $('#overlay').classList.add('show');
+}
+function closeModal(){ $('#overlay').classList.remove('show'); }
+
+function showLevelUpModal(levels, newNodes){
+  const lvl = levels[levels.length-1];
+  let body = '<p>Clearance raised to <b style="color:var(--amber)">LEVEL '+lvl+'</b>.</p>';
+  if(newNodes.length){
+    body += '<div style="margin-top:12px">'+ newNodes.map(n=>
+      '<div class="unlock-line">◈ '+n.name.toUpperCase()+' <small>'+n.branch+' — '+n.desc+'</small></div>'
+    ).join('') + '</div>';
+  }
+  if(lvl >= RENOVATOR_LVL && (lvl - levels.length) < RENOVATOR_LVL){
+    body += '<p style="margin-top:12px;color:var(--amber-hi);font-family:var(--font-mono);font-size:11px">⚠ ROOM ROTATION IS NOW ONLINE.</p>';
+  }
+  showModal('Level Up', 'OPERATOR CLEARANCE UPGRADE', body);
+  fxConfetti();
+}
+
+function showAddQuestModal(){
+  const statOpts = STATS.map(s=>'<option value="'+s+'">'+STAT_LABEL[s]+'</option>').join('');
+  const branchOpts = Object.keys(BRANCHES).map(k=>'<option value="'+k+'">'+BRANCHES[k].name+'</option>').join('');
+  showModal('New Quest', 'CUSTOM DIRECTIVE',
+    '<form id="add-quest-form">'+
+      '<label>Quest name</label><input type="text" id="nq-name" maxlength="80" placeholder="e.g. 20 min mobility work" required>'+
+      '<label>Raises stat</label><select id="nq-stat">'+statOpts+'</select>'+
+      '<label>Branch</label><select id="nq-branch">'+branchOpts+'</select>'+
+    '</form>',
+    '<button class="btn" data-action="close-modal">Cancel</button>'+
+    '<button class="btn primary" data-action="submit-quest">Deploy</button>'
+  );
+}
+
+/* ================= 8. EVENTS ================= */
+document.addEventListener('click', function(e){
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const action = el.dataset.action;
+
+  switch(action){
+    case 'complete-quest': completeQuest(el.dataset.id, el); break;
+    case 'delete-quest':
+      e.stopPropagation();
+      if(confirm('Remove this custom quest?')) deleteCustomQuest(el.dataset.id);
+      break;
+    case 'set-active': rotateRoom(el.dataset.branch); break;
+    case 'open-add': showAddQuestModal(); break;
+    case 'close-modal': closeModal(); break;
+    case 'submit-quest': submitQuest(); break;
+    case 'backup': {
+      // iPhone: share sheet → "Save to Files" lets you pick any folder in the Files app.
+      // Elsewhere: falls back to a normal .json download.
+      const json = JSON.stringify(S, null, 2);
+      const fname = 'operator-protocol-'+todayStr()+'.json';
+      const file = (typeof File !== 'undefined') ? new File([json], fname, { type:'application/json' }) : null;
+      if(file && navigator.canShare && navigator.canShare({ files:[file] })){
+        navigator.share({ files:[file], title:'Operator Protocol Save' })
+          .then(()=>toast('SAVE EXPORTED', true))
+          .catch(()=>{ /* user cancelled the share sheet — not an error */ });
+      } else {
+        try{
+          const blob = new Blob([json], { type:'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = fname;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+          toast('BACKUP DOWNLOADED', true);
+        }catch(err){ toast('BACKUP FAILED — USE COPY SAVE', true); }
+      }
+      break;
+    }
+    case 'export': {
+      const data = JSON.stringify(S);
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(data).then(
+          ()=>toast('SAVE COPIED TO CLIPBOARD', true),
+          ()=>prompt('Copy your save data:', data)
+        );
+      } else { prompt('Copy your save data:', data); }
+      break;
+    }
+    case 'import': {
+      const raw = prompt('Paste save data:');
+      if(!raw) return;
+      try{
+        const parsed = JSON.parse(raw);
+        if(typeof parsed.level !== 'number') throw new Error('bad save');
+        S = Object.assign(defaultState(), parsed);
+        rollover(); save(); render();
+        toast('SAVE RESTORED', true);
+      }catch(err){ toast('IMPORT FAILED — INVALID DATA', true); }
+      break;
+    }
+    case 'reset':
+      if(confirm('Wipe all Operator data? This cannot be undone.')){
+        try{ localStorage.removeItem(SAVE_KEY); }catch(err){}
+        S = defaultState();
+        rollover(); render();
+        toast('PROTOCOL RESET', true);
+      }
+      break;
+  }
+});
+
+function submitQuest(){
+  const name = $('#nq-name').value.trim();
+  if(!name){ $('#nq-name').focus(); return; }
+  addCustomQuest(name, $('#nq-stat').value, $('#nq-branch').value);
+  closeModal();
+  toast('QUEST DEPLOYED', true);
+}
+
+// Enter key inside the add-quest form should deploy, not reload the page
+document.addEventListener('submit', function(e){
+  if(e.target && e.target.id === 'add-quest-form'){ e.preventDefault(); submitQuest(); }
+});
+
+// close modal when tapping the dimmed backdrop
+$('#overlay').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
+
+/* ================= 9. INIT ================= */
+rollover();
+checkBadges();  // pick up anything earned in an older version of the save
+save();
+render();
+</script>
+</body>
+</html>
