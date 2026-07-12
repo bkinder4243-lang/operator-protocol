@@ -43,7 +43,7 @@ body{
   color:var(--text);
   font-family:var(--font-disp);
   min-height:100vh;
-  padding: max(12px, env(safe-area-inset-top)) 12px calc(48px + env(safe-area-inset-bottom));
+  padding: max(12px, env(safe-area-inset-top)) 12px calc(92px + env(safe-area-inset-bottom));
   max-width:680px; margin:0 auto;
   user-select:none; -webkit-user-select:none;
 }
@@ -187,6 +187,46 @@ section{ margin-top:20px; }
 .badge.earned .bn{ color:var(--text); }
 .badge.earned .bd{ color:var(--muted); }
 
+/* ---------- avatar (3D Operator, Three.js) ---------- */
+.avatar-wrap{ display:flex; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--line); padding:12px; margin-top:10px; }
+#a3d{ width:150px; height:190px; flex:0 0 auto; }
+#a3d canvas{ display:block; }
+.a3d-off{
+  width:100%; height:100%; display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.2em; color:var(--steel-dim);
+  border:1px dashed var(--line); line-height:1.8;
+}
+.a-info{ flex:1 1 auto; min-width:0; }
+.a-info .a-title{ font-size:13px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; }
+.a-info .a-tier{ font-family:var(--font-mono); font-size:10px; color:var(--amber); letter-spacing:.14em; margin-top:3px; }
+.a-info .a-desc{ font-size:10.5px; color:var(--muted); margin-top:6px; line-height:1.4; }
+.a-info .a-loadout{ margin-top:7px; display:flex; gap:4px; flex-wrap:wrap; }
+
+/* ---------- shop / vault items ---------- */
+.item{ display:flex; align-items:center; gap:12px; background:var(--panel); border:1px solid var(--line); padding:12px; margin-top:8px; }
+.item .imain{ flex:1 1 auto; min-width:0; }
+.item .islot{ font-family:var(--font-mono); font-size:8px; color:var(--steel-dim); letter-spacing:.14em; text-transform:uppercase; }
+.item .iname{ font-size:13px; font-weight:600; margin-top:2px; }
+.item .idesc{ font-size:10.5px; color:var(--muted); margin-top:2px; line-height:1.35; }
+.item.locked{ opacity:.5; }
+.item.equipped{ border-color:var(--amber-dim); background:linear-gradient(180deg, rgba(255,180,84,.05), transparent); }
+.item[data-action]{ cursor:pointer; }
+
+/* ---------- bottom tab bar ---------- */
+#tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; justify-content:center;
+  background:rgba(11,13,16,.96); border-top:1px solid var(--line);
+  padding:4px 10px calc(4px + env(safe-area-inset-bottom));
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+#tabbar .tab{
+  flex:1; max-width:170px; padding:11px 0; background:none; border:none;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.22em;
+  color:var(--steel-dim); cursor:pointer; border-top:2px solid transparent; text-transform:uppercase;
+}
+#tabbar .tab.on{ color:var(--amber); border-top-color:var(--amber); }
+main.tabpane.hidden{ display:none; }
+
 /* ---------- footer controls ---------- */
 #controls{ margin-top:24px; display:flex; gap:8px; flex-wrap:wrap; }
 .btn{
@@ -234,7 +274,7 @@ footer{
 
 /* ---------- toasts ---------- */
 #toasts{
-  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom));
+  position:fixed; left:50%; bottom:calc(76px + env(safe-area-inset-bottom));
   transform:translateX(-50%); z-index:60; display:flex; flex-direction:column;
   gap:6px; align-items:center; pointer-events:none; width:max-content; max-width:92vw;
 }
@@ -274,10 +314,20 @@ footer{
 <header>
   <div class="brand">
     <h1>Operator Protocol</h1>
-    <span class="sub">v1.1 // FIELD UNIT</span>
+    <span class="sub">v1.5 // FIELD UNIT</span>
   </div>
   <div id="hud"></div>
 </header>
+
+<main id="pane-ops" class="tabpane">
+
+<section>
+  <div class="sec-head"><span>Safehouse</span><span class="hint" id="avatar-hint"></span></div>
+  <div class="avatar-wrap">
+    <div id="a3d"></div>
+    <div class="a-info" id="avatar-info"></div>
+  </div>
+</section>
 
 <section>
   <div class="sec-head"><span>Attributes</span></div>
@@ -287,6 +337,11 @@ footer{
 <section>
   <div class="sec-head"><span>Daily Quests</span><span class="hint" id="quest-hint"></span></div>
   <div id="quests"></div>
+</section>
+
+<section>
+  <div class="sec-head"><span>Bounties</span><span class="hint">one-off side ops // pay in credits</span></div>
+  <div id="bounties"></div>
 </section>
 
 <section>
@@ -314,10 +369,33 @@ footer{
 
 <footer>LOCAL SAVE // NO SERVER // YOUR DATA STAYS ON THIS DEVICE</footer>
 
+</main>
+
+<main id="pane-shop" class="tabpane hidden">
+  <section>
+    <div class="sec-head"><span>Shop</span><span class="hint" id="shop-cr"></span></div>
+    <div id="shop"></div>
+  </section>
+</main>
+
+<main id="pane-vault" class="tabpane hidden">
+  <section>
+    <div class="sec-head"><span>Vault</span><span class="hint">tap an owned upgrade to install / remove</span></div>
+    <div id="vault"></div>
+  </section>
+</main>
+
+<nav id="tabbar">
+  <button class="tab on" data-action="tab" data-tab="ops">Ops</button>
+  <button class="tab" data-action="tab" data-tab="shop">Shop</button>
+  <button class="tab" data-action="tab" data-tab="vault">Vault</button>
+</nav>
+
 <div id="overlay"><div id="modal"></div></div>
 <div id="toasts"></div>
 <div id="fx"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 'use strict';
 /* ============================================================
@@ -385,6 +463,29 @@ const BADGES = [
   { id:'b_l10',   glyph:'✷', name:'Operator III', desc:'Reach level 10',             earned:s=>s.level>=10 },
 ];
 
+/* Upgrade catalog for the Safehouse. slot = where it installs (roof/yard/facade/sky).
+   source 'level' upgrades land in the Vault automatically at that level;
+   source 'shop' upgrades are bought with credits. All render as 3D structures. */
+const ITEMS = [
+  { id:'i_solar',   slot:'roof',   name:'Solar Array',      desc:'Panel rack on the roof mast. Free power.',            source:'level', lvl:2  },
+  { id:'i_perim',   slot:'yard',   name:'Perimeter Lights', desc:'Four amber posts marking your ground.',               source:'level', lvl:4  },
+  { id:'i_sign',    slot:'facade', name:'Holo-Sign',        desc:'A flickering marquee over the door.',                 source:'level', lvl:6  },
+  { id:'i_drone',   slot:'sky',    name:'Recon Drone',      desc:'Circles the property. Always watching.',              source:'level', lvl:8  },
+  { id:'i_spire',   slot:'roof',   name:'Beacon Spire',     desc:'A mast of light. Earned, never bought.',              source:'level', lvl:10 },
+  { id:'i_dish',    slot:'roof',   name:'Satellite Dish',   desc:'Listening to everything. Telling you some of it.',    source:'shop',  cost:250 },
+  { id:'i_garden',  slot:'yard',   name:'Garden Plot',      desc:'Something green and alive. Rare in this business.',   source:'shop',  cost:150 },
+  { id:'i_barrel',  slot:'yard',   name:'Fire Barrel',      desc:'Flickering flame. Ambience for planning ops.',        source:'shop',  cost:100 },
+  { id:'i_neon',    slot:'facade', name:'Neon Trim',        desc:'Amber light lining the roof edge.',                   source:'shop',  cost:200 },
+  { id:'i_balloon', slot:'sky',    name:'Tether Balloon',   desc:'A watchful blimp bobbing overhead.',                  source:'shop',  cost:200 },
+];
+const UTILITIES = [
+  { id:'u_shield', key:'shields', name:'Streak Shield', cost:250,
+    desc:'Auto-consumes to preserve your streak when you miss a day. Stacks.' },
+  { id:'u_token',  key:'tokens',  name:'Reroute Token', cost:300,
+    desc:'Burn one to swap a powered branch before Renovator unlocks. Stacks.' },
+];
+const TIER_NAMES = { 1:'BUNKER', 2:'OUTPOST', 3:'SAFEHOUSE', 4:'STRONGHOLD', 5:'CITADEL' };
+
 /* ================= 2. STATE ================= */
 function defaultState(){
   return {
@@ -400,21 +501,42 @@ function defaultState(){
     lastPerfectDate:null,    // 'YYYY-MM-DD' local — last Perfect Day
     badges:[],               // earned badge ids
     history:{},              // permanent journal: 'YYYY-MM-DD' → {done:[ids], xp, total, perfect}
+    credits:0,               // currency earned from bounties, spent in Shop
+    bounties:[],             // open side ops: {id, name, cr}
+    bountiesDone:0,
+    ownedItems:[],           // vault item ids (level rewards + shop purchases)
+    equipped:{ roof:null, yard:null, facade:null, sky:null },
+    shields:0,               // Streak Shields held
+    tokens:0,                // Reroute Tokens held
   };
 }
 
 function save(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){ /* storage unavailable — play session-only */ }
 }
+function migrate(st){
+  // v1.5: the Safehouse replaced earlier avatars — old cosmetic ids/slots are void
+  if(!st.equipped || typeof st.equipped!=='object' || !('roof' in st.equipped)){
+    st.equipped = { roof:null, yard:null, facade:null, sky:null };
+  }
+  st.ownedItems = (st.ownedItems||[]).filter(id=>ITEMS.some(i=>i.id===id));
+  for(const k of Object.keys(st.equipped)){
+    if(st.equipped[k] && !st.ownedItems.includes(st.equipped[k])) st.equipped[k] = null;
+  }
+  return st;
+}
+
 function load(){
   try{
     const raw = localStorage.getItem(SAVE_KEY);
-    if(raw) return Object.assign(defaultState(), JSON.parse(raw));
+    if(raw) return migrate(Object.assign(defaultState(), JSON.parse(raw)));
   }catch(e){}
   return defaultState();
 }
 
 let S = load();
+let shieldFired = false;   // transient: a Streak Shield burned during this load's rollover
+let activeTab = 'ops';     // UI-only, not part of the save
 
 /* ================= 3. DATE / ROLLOVER ================= */
 function dstr(d){ // local YYYY-MM-DD (never UTC — streaks follow the player's clock)
@@ -428,7 +550,12 @@ function rollover(){
   if(S.lastSeenDate === today) return;
   S.completedToday = [];                       // fresh checkboxes for the new day
   if(S.lastPerfectDate !== yesterdayStr()){    // yesterday wasn't perfect → chain broken
-    S.streak = 0;
+    if(S.streak > 0 && S.shields > 0){
+      S.shields -= 1;                          // Streak Shield absorbs the break (covers the whole gap)
+      shieldFired = true;
+    } else {
+      S.streak = 0;
+    }
   }
   S.lastSeenDate = today;
   // bound journal size: keep roughly the last 400 days
@@ -506,6 +633,7 @@ function completeQuest(id, sourceEl){
   const beforeLvl = S.level;
   const levelsGained = applyXP(earnedXP);
   const newNodes = levelsGained.length ? nodesUnlockedBetween(beforeLvl, S.level) : [];
+  const newItems = levelsGained.length ? grantLevelItems() : [];
   const newBadges = checkBadges();
 
   save(); render();
@@ -514,28 +642,101 @@ function completeQuest(id, sourceEl){
   fxFloatXP('+'+earnedXP+' XP', sourceEl);
   if(perfect){ toast('PERFECT DAY — STREAK '+S.streak+' — +'+PERFECT_BONUS+' XP BONUS'); fxConfetti(); }
   for(const b of newBadges) toast('COMMENDATION — '+b.name.toUpperCase());
-  if(levelsGained.length) showLevelUpModal(levelsGained, newNodes);
+  if(levelsGained.length) showLevelUpModal(levelsGained, newNodes, newItems);
 }
 
-function rotateRoom(branchKey){
-  if(S.activeBranches.includes(branchKey)) return;
-  if(!rotationUnlocked()){
-    showModal(
-      'Rotation Locked',
-      'TWO ROOMS PROTOCOL',
-      '<p>Only two rooms hold power at a time — and the wiring is welded shut.</p>'+
-      '<p style="margin-top:8px">Unlock <b style="color:var(--amber)">RENOVATOR</b> '+
-      '(Execution branch, LVL '+RENOVATOR_LVL+') to re-route power between branches. '+
-      'Until then: the focus you picked is the focus you keep.</p>',
-      '<button class="btn" data-action="close-modal">Acknowledged</button>'
-    );
-    return;
-  }
+function doReroute(branchKey){
   // replace the older of the two active rooms
   const dropped = S.activeBranches.shift();
   S.activeBranches.push(branchKey);
   save(); render();
   toast('POWER REROUTED: '+BRANCHES[dropped].name.toUpperCase()+' → '+BRANCHES[branchKey].name.toUpperCase(), true);
+}
+
+function rotateRoom(branchKey){
+  if(S.activeBranches.includes(branchKey)) return;
+  if(!rotationUnlocked()){
+    if(S.tokens > 0){
+      showModal(
+        'Reroute Token', 'ONE-TIME OVERRIDE',
+        '<p>Rotation is locked until <b style="color:var(--amber)">RENOVATOR</b> (LVL '+RENOVATOR_LVL+'). '+
+        'You hold <b class="mono" style="color:var(--amber)">'+S.tokens+'</b> Reroute Token(s).</p>'+
+        '<p style="margin-top:8px">Burn one to power <b style="color:var(--amber)">'+BRANCHES[branchKey].name.toUpperCase()+'</b> now?</p>',
+        '<button class="btn" data-action="close-modal">Cancel</button>'+
+        '<button class="btn primary" data-action="use-token" data-branch="'+branchKey+'">Burn Token</button>'
+      );
+    } else {
+      showModal(
+        'Rotation Locked',
+        'TWO ROOMS PROTOCOL',
+        '<p>Only two rooms hold power at a time — and the wiring is welded shut.</p>'+
+        '<p style="margin-top:8px">Unlock <b style="color:var(--amber)">RENOVATOR</b> '+
+        '(Execution branch, LVL '+RENOVATOR_LVL+') to re-route power between branches. '+
+        'Until then: the focus you picked is the focus you keep. '+
+        '(Or buy a one-time Reroute Token in the Shop.)</p>',
+        '<button class="btn" data-action="close-modal">Acknowledged</button>'
+      );
+    }
+    return;
+  }
+  doReroute(branchKey);
+}
+
+function avatarTier(){ return S.level>=10?5 : S.level>=8?4 : S.level>=5?3 : S.level>=3?2 : 1; }
+
+function grantLevelItems(){ // vault items earned by level; returns newly granted
+  const fresh = [];
+  for(const i of ITEMS){
+    if(i.source==='level' && S.level>=i.lvl && !S.ownedItems.includes(i.id)){
+      S.ownedItems.push(i.id); fresh.push(i);
+    }
+  }
+  return fresh;
+}
+
+function equipItem(id){
+  const item = ITEMS.find(i=>i.id===id);
+  if(!item || !S.ownedItems.includes(id)) return;
+  S.equipped[item.slot] = (S.equipped[item.slot]===id) ? null : id;  // tap again to unequip
+  save(); render();
+}
+
+function addBounty(name, cr){
+  S.bounties.push({ id:'b_'+Date.now().toString(36), name, cr });
+  save(); render();
+}
+function deleteBounty(id){
+  S.bounties = S.bounties.filter(b=>b.id!==id);
+  save(); render();
+}
+function completeBounty(id, sourceEl){
+  const b = S.bounties.find(b=>b.id===id);
+  if(!b) return;
+  S.bounties = S.bounties.filter(x=>x.id!==id);
+  S.credits += b.cr;
+  S.bountiesDone += 1;
+  save(); render();
+  fxFloatXP('+'+b.cr+' CR', sourceEl);
+  toast('BOUNTY CLEARED — +'+b.cr+' CR');
+}
+
+function buyItem(id){
+  const i = ITEMS.find(x=>x.id===id);
+  if(!i || S.ownedItems.includes(id)) return;
+  if(S.credits < i.cost){ toast('INSUFFICIENT CREDITS', true); return; }
+  S.credits -= i.cost;
+  S.ownedItems.push(id);
+  save(); render();
+  toast('ACQUIRED — '+i.name.toUpperCase()+' → VAULT');
+}
+function buyUtility(id){
+  const u = UTILITIES.find(x=>x.id===id);
+  if(!u) return;
+  if(S.credits < u.cost){ toast('INSUFFICIENT CREDITS', true); return; }
+  S.credits -= u.cost;
+  S[u.key] += 1;
+  save(); render();
+  toast(u.name.toUpperCase()+' ARMED — HOLDING '+S[u.key]);
 }
 
 function addCustomQuest(name, stat, branch){
@@ -553,7 +754,297 @@ const $ = sel => document.querySelector(sel);
 function esc(str){ const d=document.createElement('div'); d.textContent=str; return d.innerHTML; }
 
 function render(){
-  renderHUD(); renderStats(); renderQuests(); renderLog(); renderTree(); renderBadges();
+  renderHUD(); renderAvatar(); renderStats(); renderQuests(); renderBounties();
+  renderLog(); renderTree(); renderBadges(); renderShop(); renderVault();
+}
+
+function setTab(t){
+  activeTab = t;
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.add('hidden'));
+  $('#pane-'+t).classList.remove('hidden');
+  document.querySelectorAll('#tabbar .tab').forEach(b=>b.classList.toggle('on', b.dataset.tab===t));
+  window.scrollTo(0,0);
+}
+
+/* 3D Safehouse (Three.js). A model-kit style building on a rotating dais.
+   Grows with tier; installed upgrades appear as structures; the four windows
+   map to the four skill branches — only powered branches are lit (the Two
+   Rooms rule, made visible). Built once, lazily; update() syncs with state.
+   Degrades to a text placeholder if the CDN script failed. Never touches S. */
+const A3D = (function(){
+  let built=false, failed=false, renderer, scene, camera, base;
+  const parts={}, mats={}, winMesh={}, W=150, H=190, t0=Date.now();
+
+  function box(w,h,d, mat, x,y,z, parent){
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+    m.position.set(x,y,z);
+    (parent||base).add(m);
+    return m;
+  }
+
+  function build(){
+    if(built || failed) return;
+    if(typeof THREE === 'undefined'){
+      failed = true;
+      const el = $('#a3d');
+      if(el) el.innerHTML = '<div class="a3d-off">▲<br>RENDER<br>OFFLINE</div>';
+      return;
+    }
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(34, W/H, .1, 60);
+    camera.position.set(3.4, 3.0, 4.4);
+    camera.lookAt(0, 1.05, 0);
+    renderer = new THREE.WebGLRenderer({ alpha:true, antialias:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    renderer.setSize(W, H);
+    $('#a3d').appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x8fa3b8, .5));
+    const key = new THREE.DirectionalLight(0xfff2dd, .9); key.position.set(4,6,3); scene.add(key);
+    const rim = new THREE.DirectionalLight(0x5f87b0, .5); rim.position.set(-4,3,-3); scene.add(rim);
+
+    mats.shell = new THREE.MeshStandardMaterial({ color:0x2a3644, flatShading:true, roughness:.85, metalness:.15 });
+    mats.dark  = new THREE.MeshStandardMaterial({ color:0x161d26, flatShading:true, roughness:.9,  metalness:.2 });
+    mats.roof  = new THREE.MeshStandardMaterial({ color:0x11161d, flatShading:true, roughness:.7,  metalness:.4 });
+    mats.steel = new THREE.MeshStandardMaterial({ color:0x7d97ad, flatShading:true, metalness:.7,  roughness:.35 });
+    mats.amber = new THREE.MeshStandardMaterial({ color:0xffb454, emissive:0xffb454, emissiveIntensity:1 });
+    mats.winOn = new THREE.MeshStandardMaterial({ color:0xffb454, emissive:0xffb454, emissiveIntensity:1 });
+    mats.winOff= new THREE.MeshStandardMaterial({ color:0x0d1117, emissive:0x1a2430, emissiveIntensity:.25 });
+    mats.beam  = new THREE.MeshBasicMaterial({ color:0xffb454, transparent:true, opacity:.12, depthWrite:false });
+    mats.green = new THREE.MeshStandardMaterial({ color:0x3f7d4f, flatShading:true, roughness:.9 });
+    mats.panel = new THREE.MeshStandardMaterial({ color:0x1e3d5c, metalness:.8, roughness:.3 });
+
+    base = new THREE.Group(); scene.add(base);
+    // dais + ground slab
+    const dais = new THREE.Mesh(new THREE.CylinderGeometry(1.95,2.05,.15,24), mats.roof);
+    dais.position.y = .075; base.add(dais);
+    box(2.7,.12,2.7, mats.dark, 0,.21,0);
+    // core bunker (always present)
+    box(1.5,1.1,1.2, mats.shell, -.3,.82,0);
+    box(1.7,.09,1.4, mats.roof,  -.3,1.42,0);
+    box(.28,.55,.05, mats.dark,   .1,.55,.61);      // door
+    box(.05,.05,.03, mats.amber,  .24,.62,.635);    // door light
+    // branch windows — lit = powered room
+    winMesh.foundation = box(.22,.22,.04, mats.winOff, -.72,.95,.615);
+    winMesh.cognitive  = box(.22,.22,.04, mats.winOff, -.12,.95,.615);
+    winMesh.social     = box(.04,.22,.22, mats.winOff, -1.06,.95,.25);
+    winMesh.execution  = box(.22,.22,.04, mats.winOff, -.55,.95,-.615);
+    // ---- tier expansions ----
+    const g2 = new THREE.Group(); base.add(g2); parts.g2 = g2;   // annex
+    box(.9,.8,.9,   mats.shell, .9,.67,.1,  g2);
+    box(1.05,.08,1.05, mats.roof, .9,1.11,.1, g2);
+    const g3 = new THREE.Group(); base.add(g3); parts.g3 = g3;   // second floor
+    box(1.25,.8,1.05, mats.shell, -.32,1.87,0, g3);
+    box(1.4,.08,1.2,  mats.roof,  -.32,2.31,0, g3);
+    box(.2,.2,.04, mats.winOff, -.6,1.95,.53,  g3);
+    box(.2,.2,.04, mats.winOff, -.05,1.95,.53, g3);
+    const g4 = new THREE.Group(); base.add(g4); parts.g4 = g4;   // rooftop deck
+    [[.5,-.3],[1.3,-.3],[.5,.5],[1.3,.5]].forEach(p=>box(.04,.25,.04, mats.steel, p[0],1.27,p[1], g4));
+    box(.84,.03,.03, mats.steel, .9,1.4,-.3, g4);
+    box(.84,.03,.03, mats.steel, .9,1.4,.5,  g4);
+    box(.03,.03,.84, mats.steel, .5,1.4,.1,  g4);
+    box(.03,.03,.84, mats.steel, 1.3,1.4,.1, g4);
+    const deckLight = new THREE.PointLight(0xffb454, .5, 6); deckLight.position.set(.3,1.7,1.2); g4.add(deckLight);
+    const g5 = new THREE.Group(); base.add(g5); parts.g5 = g5;   // watchtower
+    box(.5,1.1,.5, mats.shell, .9,1.66,.1, g5);
+    box(.6,.08,.6, mats.roof,  .9,2.25,.1, g5);
+    const bcn = new THREE.Mesh(new THREE.SphereGeometry(.09,8,6), mats.amber); bcn.position.set(.9,2.36,.1); g5.add(bcn);
+    const bm = new THREE.Mesh(new THREE.ConeGeometry(.32,1.3,12,1,true), mats.beam); bm.position.set(.9,3.05,.1); g5.add(bm);
+
+    // ---- installable upgrades (hidden until equipped) ----
+    function pole(h, x, y, z, parent){
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,h,6), mats.steel);
+      p.position.set(x,y,z); parent.add(p); return p;
+    }
+    const solar = new THREE.Group();
+    pole(.55, -.85,1.72,-.35, solar);
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(.55,.04,.42), mats.panel);
+    p1.position.set(-1.08,2.02,-.35); p1.rotation.x = -.45; solar.add(p1);
+    const p2 = p1.clone(); p2.position.x = -.55; solar.add(p2);
+    base.add(solar); parts.i_solar = solar;
+
+    const perim = new THREE.Group();
+    [[1.2,1.2],[1.2,-1.2],[-1.2,1.2],[-1.2,-1.2]].forEach(p=>{
+      box(.05,.35,.05, mats.dark, p[0],.45,p[1], perim);
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(.05,6,5), mats.amber);
+      tip.position.set(p[0],.66,p[1]); perim.add(tip);
+    });
+    base.add(perim); parts.i_perim = perim;
+
+    const sign = new THREE.Group();
+    const signMat = mats.amber.clone();
+    const sg = new THREE.Mesh(new THREE.BoxGeometry(.95,.26,.05), signMat); sg.position.set(-.3,1.66,.72); sign.add(sg);
+    box(.03,.2,.03, mats.steel, -.65,1.5,.7, sign);
+    box(.03,.2,.03, mats.steel,  .05,1.5,.7, sign);
+    base.add(sign); parts.i_sign = sign; parts._signMat = signMat;
+
+    const drone = new THREE.Group();
+    const dbody = new THREE.Mesh(new THREE.BoxGeometry(.2,.08,.2), mats.dark);  dbody.position.set(1.9,2.7,0); drone.add(dbody);
+    const rotor = new THREE.Mesh(new THREE.BoxGeometry(.34,.02,.05), mats.steel); rotor.position.set(1.9,2.77,0); drone.add(rotor);
+    const deye  = new THREE.Mesh(new THREE.SphereGeometry(.035,6,5), mats.amber); deye.position.set(1.9,2.67,.1); drone.add(deye);
+    base.add(drone); parts.i_drone = drone; parts._rotor = rotor;
+
+    const spire = new THREE.Group();
+    pole(1.75, -.85,2.32,-.35, spire);
+    const sb = new THREE.Mesh(new THREE.SphereGeometry(.08,8,6), mats.amber); sb.position.set(-.85,3.25,-.35); spire.add(sb);
+    const sbeam = new THREE.Mesh(new THREE.ConeGeometry(.28,1.1,12,1,true), mats.beam); sbeam.position.set(-.85,3.85,-.35); spire.add(sbeam);
+    base.add(spire); parts.i_spire = spire;
+
+    const dish = new THREE.Group();
+    pole(.5, -.85,1.7,-.35, dish);
+    const dd = new THREE.Mesh(new THREE.CylinderGeometry(.32,.36,.08,14), mats.steel);
+    dd.position.set(-.85,2.05,-.35); dd.rotation.x = -1.0; dish.add(dd);
+    base.add(dish); parts.i_dish = dish;
+
+    const garden = new THREE.Group();
+    [.5,.85,1.2].forEach(x=>{
+      box(.3,.1,.3,  mats.dark,  x,.3,.95, garden);
+      box(.24,.12,.24, mats.green, x,.4,.95, garden);
+    });
+    base.add(garden); parts.i_garden = garden;
+
+    const barrel = new THREE.Group();
+    const bb = new THREE.Mesh(new THREE.CylinderGeometry(.15,.17,.32,10), mats.dark); bb.position.set(-1.05,.43,.85); barrel.add(bb);
+    const fireMat = mats.amber.clone();
+    const fire = new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.04,8), fireMat); fire.position.set(-1.05,.6,.85); barrel.add(fire);
+    base.add(barrel); parts.i_barrel = barrel; parts._fireMat = fireMat;
+
+    const neon = new THREE.Group();
+    box(1.72,.035,.035, mats.amber, -.3,1.48,.71,  neon);
+    box(.035,.035,1.42, mats.amber, -1.16,1.48,0,  neon);
+    box(.035,.035,1.42, mats.amber,  .56,1.48,0,   neon);
+    base.add(neon); parts.i_neon = neon;
+
+    const balloon = new THREE.Group();
+    const tether = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,1.9,4), mats.steel);
+    tether.position.set(1.25,2.1,-.7); balloon.add(tether);
+    const balMat = new THREE.MeshStandardMaterial({ color:0xcf7a3c, emissive:0x5a2f10, flatShading:true });
+    const bal = new THREE.Mesh(new THREE.SphereGeometry(.24,8,7), balMat); bal.position.set(1.25,3.1,-.7); balloon.add(bal);
+    base.add(balloon); parts.i_balloon = balloon; parts._bal = bal;
+
+    built = true;
+    if(!REDUCED) loop();
+    else renderer.render(scene, camera);
+  }
+
+  function loop(){
+    requestAnimationFrame(loop);
+    const t = (Date.now()-t0)/1000;
+    base.rotation.y = t*.25;                                   // display turntable
+    if(parts.i_drone.visible){ parts.i_drone.rotation.y = t*.9; parts._rotor.rotation.y = t*25; }
+    if(parts.i_sign.visible)   parts._signMat.emissiveIntensity = .8 + .3*Math.sin(t*6);
+    if(parts.i_barrel.visible) parts._fireMat.emissiveIntensity = .8 + .4*Math.sin(t*11) + .2*Math.sin(t*23);
+    if(parts.i_balloon.visible) parts._bal.position.y = 3.1 + Math.sin(t*1.2)*.08;
+    renderer.render(scene, camera);
+  }
+
+  function update(){
+    build();
+    if(!built) return;
+    const tier = avatarTier(), eq = S.equipped;
+    parts.g2.visible = tier>=2;
+    parts.g3.visible = tier>=3;
+    parts.g4.visible = tier>=4;
+    parts.g5.visible = tier>=5;
+    ['i_solar','i_perim','i_sign','i_drone','i_spire','i_dish','i_garden','i_barrel','i_neon','i_balloon'].forEach(id=>{
+      if(parts[id]) parts[id].visible = Object.values(eq).includes(id);
+    });
+    for(const b in winMesh){
+      winMesh[b].material = S.activeBranches.includes(b) ? mats.winOn : mats.winOff;
+    }
+    if(REDUCED) renderer.render(scene, camera);
+  }
+
+  return { update };
+})();
+
+function renderAvatar(){
+  const tier = avatarTier();
+  const eq = S.equipped;
+
+  const loadout = Object.values(eq).filter(Boolean).map(id=>{
+    const i = ITEMS.find(x=>x.id===id);
+    return i ? '<span class="tag active-branch">'+i.name+'</span>' : '';
+  }).join('') || '<span class="tag">NO UPGRADES INSTALLED</span>';
+
+  const tierDesc = {
+    1:'A bare bunker, lights mostly off. Log quests to build it out.',
+    2:'Annex added. Somebody lives here now.',
+    3:'Second floor up. The bunker became a home.',
+    4:'Rooftop deck and warm light. Earned board by board.',
+    5:'Watchtower online. A one-person institution.',
+  }[tier];
+
+  const lit = S.activeBranches.map(b=>BRANCHES[b].name.toUpperCase()).join(' + ');
+
+  $('#avatar-hint').textContent = 'expands at lvl 3 / 5 / 8 / 10';
+  $('#avatar-info').innerHTML =
+    '<div class="a-title">The Safehouse</div>'+
+    '<div class="a-tier">TIER '+tier+' // '+TIER_NAMES[tier]+'</div>'+
+    '<div class="a-desc">'+tierDesc+'</div>'+
+    '<div class="a-tier" style="margin-top:6px;color:var(--steel)">LIT ROOMS: '+lit+'</div>'+
+    '<div class="a-loadout">'+loadout+'</div>';
+  A3D.update();
+}
+
+function renderBounties(){
+  const rows = S.bounties.map(b=>
+    '<div class="quest" data-action="complete-bounty" data-id="'+b.id+'">'+
+      '<div class="qbox"></div>'+
+      '<div class="qmain">'+
+        '<div class="qname">'+esc(b.name)+'</div>'+
+        '<div class="qtags"><span class="tag">Side Op</span><span class="tag">One-Time</span></div>'+
+      '</div>'+
+      '<div class="qxp boosted">+'+b.cr+' CR</div>'+
+      '<span class="qdel" data-action="delete-bounty" data-id="'+b.id+'">✕</span>'+
+    '</div>'
+  ).join('');
+  $('#bounties').innerHTML = (rows || '<div class="quest" style="cursor:default;color:var(--steel-dim);font-size:12px">No open bounties. Post real-world side jobs and pay yourself in credits.</div>')+
+    '<button class="btn" data-action="open-bounty" style="margin-top:8px">+ Post Bounty</button>';
+}
+
+function renderShop(){
+  $('#shop-cr').textContent = 'BALANCE: '+S.credits+' CR';
+  const util = UTILITIES.map(u=>
+    '<div class="item">'+
+      '<div class="imain">'+
+        '<div class="islot">Utility'+(S[u.key]>0?' // HOLDING ×'+S[u.key]:'')+'</div>'+
+        '<div class="iname">'+u.name+'</div>'+
+        '<div class="idesc">'+u.desc+'</div>'+
+      '</div>'+
+      '<button class="btn'+(S.credits>=u.cost?' primary':'')+'" data-action="buy-util" data-id="'+u.id+'">'+u.cost+' CR</button>'+
+    '</div>'
+  ).join('');
+  const cosm = ITEMS.filter(i=>i.source==='shop').map(i=>{
+    const owned = S.ownedItems.includes(i.id);
+    return '<div class="item'+(owned?' equipped':'')+'">'+
+      '<div class="imain">'+
+        '<div class="islot">'+i.slot+' mod</div>'+
+        '<div class="iname">'+i.name+'</div>'+
+        '<div class="idesc">'+i.desc+'</div>'+
+      '</div>'+
+      (owned ? '<span class="tag active-branch">IN VAULT</span>'
+             : '<button class="btn'+(S.credits>=i.cost?' primary':'')+'" data-action="buy-item" data-id="'+i.id+'">'+i.cost+' CR</button>')+
+    '</div>';
+  }).join('');
+  $('#shop').innerHTML = util + cosm;
+}
+
+function renderVault(){
+  $('#vault').innerHTML = ITEMS.map(i=>{
+    const owned = S.ownedItems.includes(i.id);
+    const on = S.equipped[i.slot]===i.id;
+    const gate = i.source==='level' ? 'UNLOCKS AT LVL '+i.lvl : 'IN SHOP — '+i.cost+' CR';
+    return '<div class="item'+(on?' equipped':'')+(owned?'':' locked')+'"'+
+      (owned?' data-action="equip" data-id="'+i.id+'"':'')+'>'+
+      '<div class="imain">'+
+        '<div class="islot">'+i.slot+' slot</div>'+
+        '<div class="iname">'+i.name+'</div>'+
+        '<div class="idesc">'+i.desc+'</div>'+
+      '</div>'+
+      '<span class="tag'+(on?' active-branch':'')+'">'+(on?'INSTALLED':owned?'INSTALL':gate)+'</span>'+
+    '</div>';
+  }).join('');
 }
 
 function renderLog(){
@@ -582,6 +1073,7 @@ function renderHUD(){
     '<div class="hud-row">'+
       '<span class="hud-item">OPERATOR <b class="amber">LVL '+S.level+'</b></span>'+
       '<span class="hud-item '+streakCls+'">▲ STREAK <b>'+S.streak+'</b></span>'+
+      '<span class="hud-item">CR <b class="amber">'+S.credits+'</b></span>'+
       '<span class="hud-item">BEST <b>'+S.bestStreak+'</b></span>'+
     '</div>'+
     '<div class="xpbar"><i style="width:'+pct+'%"></i></div>'+
@@ -715,12 +1207,17 @@ function showModal(title, sub, bodyHTML, actionsHTML){
 }
 function closeModal(){ $('#overlay').classList.remove('show'); }
 
-function showLevelUpModal(levels, newNodes){
+function showLevelUpModal(levels, newNodes, newItems){
   const lvl = levels[levels.length-1];
   let body = '<p>Clearance raised to <b style="color:var(--amber)">LEVEL '+lvl+'</b>.</p>';
   if(newNodes.length){
     body += '<div style="margin-top:12px">'+ newNodes.map(n=>
       '<div class="unlock-line">◈ '+n.name.toUpperCase()+' <small>'+n.branch+' — '+n.desc+'</small></div>'
+    ).join('') + '</div>';
+  }
+  if(newItems && newItems.length){
+    body += '<div style="margin-top:6px">'+ newItems.map(i=>
+      '<div class="unlock-line">▣ '+i.name.toUpperCase()+' <small>Safehouse upgrade — '+i.desc+' Install it from the VAULT tab.</small></div>'
     ).join('') + '</div>';
   }
   if(lvl >= RENOVATOR_LVL && (lvl - levels.length) < RENOVATOR_LVL){
@@ -760,6 +1257,30 @@ document.addEventListener('click', function(e){
     case 'open-add': showAddQuestModal(); break;
     case 'close-modal': closeModal(); break;
     case 'submit-quest': submitQuest(); break;
+    case 'tab': setTab(el.dataset.tab); break;
+    case 'complete-bounty': completeBounty(el.dataset.id, el); break;
+    case 'delete-bounty':
+      if(confirm('Remove this bounty?')) deleteBounty(el.dataset.id);
+      break;
+    case 'open-bounty': showAddBountyModal(); break;
+    case 'submit-bounty': submitBounty(); break;
+    case 'equip': equipItem(el.dataset.id); break;
+    case 'buy-item': {
+      const i = ITEMS.find(x=>x.id===el.dataset.id);
+      if(i && confirm('Buy '+i.name+' for '+i.cost+' CR?')) buyItem(i.id);
+      break;
+    }
+    case 'buy-util': {
+      const u = UTILITIES.find(x=>x.id===el.dataset.id);
+      if(u && confirm('Buy '+u.name+' for '+u.cost+' CR?')) buyUtility(u.id);
+      break;
+    }
+    case 'use-token':
+      S.tokens -= 1;
+      closeModal();
+      doReroute(el.dataset.branch);
+      toast('REROUTE TOKEN BURNED — '+S.tokens+' LEFT', true);
+      break;
     case 'backup': {
       // iPhone: share sheet → "Save to Files" lets you pick any folder in the Files app.
       // Elsewhere: falls back to a normal .json download.
@@ -799,7 +1320,7 @@ document.addEventListener('click', function(e){
       try{
         const parsed = JSON.parse(raw);
         if(typeof parsed.level !== 'number') throw new Error('bad save');
-        S = Object.assign(defaultState(), parsed);
+        S = migrate(Object.assign(defaultState(), parsed));
         rollover(); save(); render();
         toast('SAVE RESTORED', true);
       }catch(err){ toast('IMPORT FAILED — INVALID DATA', true); }
@@ -824,9 +1345,34 @@ function submitQuest(){
   toast('QUEST DEPLOYED', true);
 }
 
-// Enter key inside the add-quest form should deploy, not reload the page
+function showAddBountyModal(){
+  showModal('Post Bounty', 'SIDE OP // PAYS ONCE',
+    '<form id="add-bounty-form">'+
+      '<label>Objective</label><input type="text" id="nb-name" maxlength="80" placeholder="e.g. Clean out the garage" required>'+
+      '<label>Payout</label><select id="nb-cr">'+
+        '<option value="25">25 CR — Minor (under 30 min)</option>'+
+        '<option value="50" selected>50 CR — Standard (an hour of effort)</option>'+
+        '<option value="100">100 CR — Major (a real project)</option>'+
+        '<option value="250">250 CR — Epic (you dreaded this one)</option>'+
+      '</select>'+
+    '</form>',
+    '<button class="btn" data-action="close-modal">Cancel</button>'+
+    '<button class="btn primary" data-action="submit-bounty">Post</button>'
+  );
+}
+function submitBounty(){
+  const name = $('#nb-name').value.trim();
+  if(!name){ $('#nb-name').focus(); return; }
+  addBounty(name, parseInt($('#nb-cr').value, 10));
+  closeModal();
+  toast('BOUNTY POSTED', true);
+}
+
+// Enter key inside modal forms should submit, not reload the page
 document.addEventListener('submit', function(e){
-  if(e.target && e.target.id === 'add-quest-form'){ e.preventDefault(); submitQuest(); }
+  if(!e.target) return;
+  if(e.target.id === 'add-quest-form'){ e.preventDefault(); submitQuest(); }
+  if(e.target.id === 'add-bounty-form'){ e.preventDefault(); submitBounty(); }
 });
 
 // close modal when tapping the dimmed backdrop
@@ -834,9 +1380,12 @@ $('#overlay').addEventListener('click', function(e){ if(e.target === this) close
 
 /* ================= 9. INIT ================= */
 rollover();
-checkBadges();  // pick up anything earned in an older version of the save
+checkBadges();       // pick up anything earned in an older version of the save
+grantLevelItems();   // sync vault with current level (covers old saves too)
 save();
 render();
+setTab('ops');
+if(shieldFired){ toast('STREAK SHIELD CONSUMED — STREAK PRESERVED'); shieldFired = false; }
 </script>
 </body>
 </html>
