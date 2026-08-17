@@ -1,0 +1,33 @@
+{
+  "name": "trade-desk",
+  "version": "2.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ocr:assets": "node scripts/fetch-ocr-assets.mjs",
+    "predev": "npm run ocr:assets",
+    "prebuild": "npm run ocr:assets"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dexie": "^4.4.5",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tesseract.js": "^7.0.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  },
+  "private": true,
+  "type": "module"
+}
