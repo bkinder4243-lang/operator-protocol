@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FOCUS">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d10">
+<title>FOCUS CYCLE</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   FOCUS CYCLE — pomodoro timer
+   Same console palette as OPERATOR PROTOCOL:
+   amber = focus/active, steel-blue = break/idle.
+   ============================================================ */
+:root{
+  --bg:        #0b0d10;
+  --panel:     #11151b;
+  --panel-2:   #161b23;
+  --line:      #232b36;
+  --amber:     #ffb454;
+  --amber-hi:  #ffd08a;
+  --amber-dim: #7a5a28;
+  --steel:     #7d97ad;
+  --steel-dim: #46586b;
+  --text:      #d8dee6;
+  --muted:     #8b96a3;
+  --danger:    #e2574a;
+  --font-disp: 'Chakra Petch', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  /* --accent flips with the running phase */
+  --accent:     var(--amber);
+  --accent-hi:  var(--amber-hi);
+  --accent-dim: var(--amber-dim);
+}
+body.break{ --accent:var(--steel); --accent-hi:#a8c0d4; --accent-dim:var(--steel-dim); }
+
+*{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+html{ background:var(--bg); }
+body{
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-disp);
+  min-height:100vh; min-height:100dvh;
+  padding: max(12px, env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
+  max-width:520px; margin:0 auto;
+  user-select:none; -webkit-user-select:none;
+}
+
+/* ---------- header ---------- */
+header{ padding:10px 2px 12px; border-bottom:1px solid var(--line);
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+h1{ font-size:18px; font-weight:700; color:var(--accent); text-transform:uppercase;
+  letter-spacing:.14em; transition:color .4s; }
+header .sub{ font-family:var(--font-mono); font-size:10px; color:var(--steel-dim); letter-spacing:.2em; }
+
+/* ---------- phase strip ---------- */
+#phases{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:14px; }
+.ph{
+  background:var(--panel); border:1px solid var(--line); padding:8px 4px;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--steel-dim); text-align:center; cursor:pointer;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.ph:active{ background:var(--panel-2); }
+.ph.on{ color:var(--accent); border-color:var(--accent-dim); background:var(--panel-2); }
+
+/* ---------- dial ---------- */
+#dial{ position:relative; margin:22px auto 0; width:min(78vw, 300px); aspect-ratio:1; }
+#dial svg{ width:100%; height:100%; transform:rotate(-90deg); display:block; }
+#track{ fill:none; stroke:var(--line); stroke-width:9; }
+#prog{
+  fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:butt;
+  transition:stroke-dashoffset .3s linear, stroke .4s;
+}
+body.running #prog{ filter:drop-shadow(0 0 6px rgba(255,180,84,.35)); }
+body.running.break #prog{ filter:drop-shadow(0 0 6px rgba(125,151,173,.35)); }
+#face{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:6px;
+}
+#time{
+  font-family:var(--font-mono); font-weight:600; font-size:clamp(40px, 15vw, 58px);
+  line-height:1; letter-spacing:.02em; color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+body.running #time{ color:var(--accent-hi); }
+#label{
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--muted);
+}
+#pips{ display:flex; gap:6px; margin-top:2px; }
+#pips i{ width:7px; height:7px; border:1px solid var(--steel-dim); display:block; }
+#pips i.done{ background:var(--amber); border-color:var(--amber); }
+
+/* ---------- controls ---------- */
+#controls{ display:flex; gap:8px; margin-top:22px; }
+.btn{
+  flex:1; padding:14px 8px; background:var(--panel); border:1px solid var(--line);
+  color:var(--text); font-family:var(--font-disp); font-size:13px; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase; cursor:pointer;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.btn:active{ background:var(--panel-2); }
+.btn.primary{ flex:1.6; color:var(--accent); border-color:var(--accent-dim); }
+
+/* ---------- stats ---------- */
+#stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:22px; }
+.stat{ background:var(--panel); border:1px solid var(--line); padding:9px 10px; }
+.stat .k{ font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.stat .v{ font-family:var(--font-mono); font-size:20px; font-weight:600; color:var(--text); line-height:1.2; }
+
+/* ---------- settings ---------- */
+details{ margin-top:22px; border-top:1px solid var(--line); }
+summary{
+  list-style:none; cursor:pointer; padding:12px 2px;
+  font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--steel);
+  display:flex; justify-content:space-between; align-items:center;
+}
+summary::-webkit-details-marker{ display:none; }
+summary::after{ content:'+'; font-family:var(--font-mono); color:var(--steel-dim); }
+details[open] summary::after{ content:'−'; }
+.row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:9px 2px; border-top:1px solid var(--line);
+}
+.row label{ font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:.06em; }
+.row input[type=number]{
+  width:72px; padding:7px 8px; background:var(--panel-2); border:1px solid var(--line);
+  color:var(--text); font-family:var(--font-mono); font-size:14px; text-align:center;
+  -moz-appearance:textfield;
+}
+.row input[type=number]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.row input[type=number]:focus{ outline:none; border-color:var(--amber-dim); }
+.row input[type=checkbox]{ width:20px; height:20px; accent-color:var(--amber); }
+.reset{
+  margin:14px 0 4px; width:100%; padding:11px; background:transparent;
+  border:1px solid #3a2320; color:var(--danger); font-family:var(--font-mono);
+  font-size:10px; letter-spacing:.18em; text-transform:uppercase; cursor:pointer;
+}
+footer{
+  margin-top:20px; text-align:center; font-family:var(--font-mono);
+  font-size:9px; letter-spacing:.14em; color:var(--steel-dim); text-transform:uppercase;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Focus Cycle</h1>
+  <span class="sub" id="clock">--:--</span>
+</header>
+
+<div id="phases">
+  <div class="ph on" data-phase="focus">Focus</div>
+  <div class="ph" data-phase="short">Break</div>
+  <div class="ph" data-phase="long">Long</div>
+</div>
+
+<div id="dial">
+  <svg viewBox="0 0 200 200" aria-hidden="true">
+    <circle id="track" cx="100" cy="100" r="88"></circle>
+    <circle id="prog"  cx="100" cy="100" r="88"></circle>
+  </svg>
+  <div id="face">
+    <div id="time">25:00</div>
+    <div id="label">Ready</div>
+    <div id="pips"></div>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="btn primary" id="go">Start</button>
+  <button class="btn" id="skip">Skip</button>
+  <button class="btn" id="reset">Reset</button>
+</div>
+
+<div id="stats">
+  <div class="stat"><div class="k">Today</div><div class="v" id="s-today">0</div></div>
+  <div class="stat"><div class="k">Focused</div><div class="v" id="s-mins">0m</div></div>
+  <div class="stat"><div class="k">Streak</div><div class="v" id="s-streak">0</div></div>
+</div>
+
+<details>
+  <summary>Settings</summary>
+  <div class="row"><label>Focus (min)</label><input type="number" id="c-focus" min="1" max="180" step="1"></div>
+  <div class="row"><label>Short break (min)</label><input type="number" id="c-short" min="1" max="60" step="1"></div>
+  <div class="row"><label>Long break (min)</label><input type="number" id="c-long" min="1" max="60" step="1"></div>
+  <div class="row"><label>Long break every</label><input type="number" id="c-every" min="2" max="12" step="1"></div>
+  <div class="row"><label>Auto-start next</label><input type="checkbox" id="c-auto"></div>
+  <div class="row"><label>Chime</label><input type="checkbox" id="c-sound"></div>
+  <div class="row"><label>Vibrate</label><input type="checkbox" id="c-vibe"></div>
+  <div class="row"><label>Keep screen awake</label><input type="checkbox" id="c-wake"></div>
+  <button class="reset" id="wipe">Clear stats</button>
+</details>
+
+<footer>Add to home screen · runs offline</footer>
+
+<script>
+(() => {
+'use strict';
+
+const KEY_CFG = 'fc.cfg.v1', KEY_ST = 'fc.stats.v1';
+const DEFAULTS = { focus:25, short:5, long:15, every:4, auto:true, sound:true, vibe:true, wake:true };
+
+const load = (k, fb) => { try { return Object.assign({}, fb, JSON.parse(localStorage.getItem(k)) || {}); }
+                          catch { return Object.assign({}, fb); } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let cfg   = load(KEY_CFG, DEFAULTS);
+let stats = load(KEY_ST, { day:'', today:0, mins:0, streak:0, lastDay:'', done:0 });
+
+const $ = id => document.getElementById(id);
+const today = () => new Date().toLocaleDateString('sv');   // local YYYY-MM-DD
+
+/* ---- timer state. endAt is a wall-clock deadline, so backgrounding
+        the tab never drifts the countdown. ---- */
+let phase   = 'focus';
+let running = false;
+let endAt   = 0;                      // ms epoch when running
+let left    = cfg.focus * 60000;      // ms remaining when paused
+let tick    = null;
+let wakeLock = null;
+let audioCtx = null;
+
+const durMs = p => Math.max(1, cfg[p === 'focus' ? 'focus' : p === 'short' ? 'short' : 'long']) * 60000;
+const remaining = () => running ? Math.max(0, endAt - Date.now()) : left;
+
+/* ---------------- rendering ---------------- */
+const CIRC = 2 * Math.PI * 88;
+$('prog').style.strokeDasharray = CIRC;
+
+const LABELS = { focus:'Focus', short:'Break', long:'Long Break' };
+
+function fmt(ms){
+  const t = Math.round(ms / 1000);
+  const m = Math.floor(t / 60), s = t % 60;
+  return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function render(){
+  const ms = remaining(), total = durMs(phase);
+  const txt = fmt(ms);
+  $('time').textContent = txt;
+  $('label').textContent = running ? LABELS[phase] : (ms === total ? 'Ready' : 'Paused');
+  // progress drains clockwise as time runs out
+  $('prog').style.strokeDashoffset = CIRC * (1 - ms / total);
+  document.body.classList.toggle('running', running);
+  document.body.classList.toggle('break', phase !== 'focus');
+  $('go').textContent = running ? 'Pause' : (ms === total ? 'Start' : 'Resume');
+  document.title = running ? `${txt} · ${LABELS[phase]}` : 'FOCUS CYCLE';
+  document.querySelectorAll('.ph').forEach(el =>
+    el.classList.toggle('on', el.dataset.phase === phase));
+}
+
+function renderPips(){
+  const n = Math.max(2, cfg.every), at = stats.done % n;
+  $('pips').innerHTML = Array.from({ length:n },
+    (_, i) => `<i class="${i < at ? 'done' : ''}"></i>`).join('');
+}
+
+function renderStats(){
+  rollDay();
+  $('s-today').textContent  = stats.today;
+  $('s-mins').textContent   = stats.mins >= 60
+    ? (stats.mins / 60).toFixed(1).replace(/\.0$/,'') + 'h'
+    : stats.mins + 'm';
+  $('s-streak').textContent = stats.streak;
+  renderPips();
+}
+
+/* Roll the per-day counters over at local midnight. */
+function rollDay(){
+  const d = today();
+  if (stats.day !== d){ stats.day = d; stats.today = 0; stats.mins = 0; save(KEY_ST, stats); }
+}
+
+/* ---------------- transport ---------------- */
+function start(){
+  if (running) return;
+  endAt = Date.now() + left;
+  running = true;
+  tick = setInterval(step, 250);
+  requestWake();
+  if (cfg.sound) primeAudio();
+  render();
+}
+
+function pause(){
+  if (!running) return;
+  left = remaining();
+  running = false;
+  clearInterval(tick); tick = null;
+  releaseWake();
+  render();
+}
+
+function setPhase(p, autoStart){
+  pause();
+  phase = p;
+  left = durMs(p);
+  render();
+  if (autoStart) start();
+}
+
+function step(){
+  if (remaining() > 0){ render(); return; }
+  complete();
+}
+
+function complete(){
+  const finished = phase;
+  pause();
+  alert_();
+
+  if (finished === 'focus'){
+    // credit the session, then pick the next break
+    stats.done += 1;
+    rollDay();
+    stats.today += 1;
+    stats.mins  += cfg.focus;
+    if (stats.lastDay !== stats.day){
+      const y = new Date(Date.now() - 864e5).toLocaleDateString('sv');
+      stats.streak = stats.lastDay === y ? stats.streak + 1 : 1;
+      stats.lastDay = stats.day;
+    }
+    save(KEY_ST, stats);
+    renderStats();
+    setPhase(stats.done % Math.max(2, cfg.every) === 0 ? 'long' : 'short', cfg.auto);
+  } else {
+    setPhase('focus', cfg.auto);
+  }
+}
+
+/* ---------------- alerts ---------------- */
+function primeAudio(){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch {}
+}
+
+function alert_(){
+  if (cfg.vibe && navigator.vibrate) navigator.vibrate([180, 90, 180]);
+  if (!cfg.sound) return;
+  try {
+    primeAudio();
+    // three rising blips
+    [0, 0.22, 0.44].forEach((t, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      const at = audioCtx.currentTime + t;
+      o.type = 'sine';
+      o.frequency.setValueAtTime([660, 880, 1100][i], at);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.3, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.18);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(at); o.stop(at + 0.2);
+    });
+  } catch {}
+}
+
+/* ---------------- wake lock ---------------- */
+async function requestWake(){
+  if (!cfg.wake || !navigator.wakeLock || wakeLock) return;
+  try { wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; }); }
+  catch {}
+}
+function releaseWake(){ if (wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; } }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible'){
+    if (running){ requestWake(); step(); }
+    renderStats();
+  }
+});
+
+/* ---------------- settings wiring ---------------- */
+const NUMS = { 'c-focus':'focus', 'c-short':'short', 'c-long':'long', 'c-every':'every' };
+const BOOLS = { 'c-auto':'auto', 'c-sound':'sound', 'c-vibe':'vibe', 'c-wake':'wake' };
+
+function fillSettings(){
+  for (const [id, k] of Object.entries(NUMS))  $(id).value   = cfg[k];
+  for (const [id, k] of Object.entries(BOOLS)) $(id).checked = !!cfg[k];
+}
+
+for (const [id, k] of Object.entries(NUMS)){
+  $(id).addEventListener('change', e => {
+    const max = +e.target.max, min = +e.target.min;
+    const v = Math.min(max, Math.max(min, Math.round(+e.target.value) || min));
+    e.target.value = v;
+    cfg[k] = v; save(KEY_CFG, cfg);
+    if (!running && k !== 'every'){ left = durMs(phase); }
+    renderPips(); render();
+  });
+}
+for (const [id, k] of Object.entries(BOOLS)){
+  $(id).addEventListener('change', e => {
+    cfg[k] = e.target.checked; save(KEY_CFG, cfg);
+    if (k === 'wake') running && cfg.wake ? requestWake() : releaseWake();
+    if (k === 'sound' && cfg.sound) primeAudio();
+  });
+}
+
+$('go').addEventListener('click',   () => running ? pause() : start());
+$('skip').addEventListener('click', () => complete());
+$('reset').addEventListener('click',() => setPhase(phase, false));
+document.querySelectorAll('.ph').forEach(el =>
+  el.addEventListener('click', () => setPhase(el.dataset.phase, false)));
+
+$('wipe').addEventListener('click', () => {
+  if (!confirm('Clear all stats?')) return;
+  stats = { day:today(), today:0, mins:0, streak:0, lastDay:'', done:0 };
+  save(KEY_ST, stats); renderStats();
+});
+
+// space bar toggles on desktop
+addEventListener('keydown', e => {
+  if (e.code === 'Space' && !/INPUT|TEXTAREA/.test(e.target.tagName)){
+    e.preventDefault(); running ? pause() : start();
+  }
+});
+
+/* ---------------- boot ---------------- */
+function clock(){
+  $('clock').textContent = new Date()
+    .toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+clock(); setInterval(clock, 15000);
+
+fillSettings();
+renderStats();
+render();
+
+if ('serviceWorker' in navigator){
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+})();
+</script>
+</body>
+</html>
